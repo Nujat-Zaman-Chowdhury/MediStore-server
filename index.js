@@ -15,9 +15,9 @@ app.use(cors(corsOptions))
 app.use(express.json())
 
 app.get('/', (req, res) => {
-    res.send('Hello from Server..')
+    res.send('Hello from MediStore Server..')
   })
   
 app.listen(port, () => {
-    console.log(` is running on port ${port}`)
+    console.log(`MediStore is running on port ${port}`)
 })
