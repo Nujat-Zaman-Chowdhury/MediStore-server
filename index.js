@@ -36,7 +36,51 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    
+      
+    //all collection 
+    const userCollection = client.db('mediStoreDB').collection('users')
+
+    //users related api
+    app.put('/user',async(req,res)=>{
+      const user = req.body;
+      const query = {email:user?.email}
+
+      const isExist = await userCollection.findOne(query)
+
+      if(isExist){
+        return res.send({message:"user already exit"},isExist)
+      }
+      const result = await userCollection.insertOne(user);
+      res.send(result)
+    })
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
     console.log("Pinged your deployment. You successfully connected to MongoDB!");
