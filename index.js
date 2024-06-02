@@ -2,8 +2,9 @@ const express = require('express')
 const app = express()
 const { MongoClient, ServerApiVersion } = require('mongodb');
 require('dotenv').config()
+const jwt = require('jsonwebtoken');
 const cors = require('cors')
-const port = process.env.PORT || 5000
+const port = process.env.PORT || 8000
 
 // middleware
 const corsOptions = {
@@ -40,6 +41,17 @@ async function run() {
     //all collection 
     const userCollection = client.db('mediStoreDB').collection('users')
 
+    //jwt related api
+    app.post('/jwt',async(req,res)=>{
+      const user = req.body;
+      console.log(user);
+      const token =jwt.sign(user,process.env.ACCESS_TOKEN,{expiresIn:'7d'})
+      console.log(token);
+      res.send({token});
+    })
+
+
+
     //users related api
     app.put('/user',async(req,res)=>{
       const user = req.body;
@@ -48,7 +60,7 @@ async function run() {
       const isExist = await userCollection.findOne(query)
 
       if(isExist){
-        return res.send({message:"user already exit"},isExist)
+        return res.send({message:"user already exit", insertedId: null})
       }
       const result = await userCollection.insertOne(user);
       res.send(result)
