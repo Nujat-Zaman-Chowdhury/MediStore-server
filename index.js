@@ -47,7 +47,7 @@ async function run() {
       const user = req.body;
       // console.log(user);
       const token =jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'7d'})
-      console.log(token);
+      // console.log(token);
       res.send({token});
     })
 
@@ -70,26 +70,73 @@ async function run() {
 
 
     //users related api
+    // app.put('/user',async(req,res)=>{
+    //   const user = req.body;
+    //   const query = {email:user?.email}
+      
+    //   const isExist = await userCollection.findOne(query)
+
+    //   if(isExist){
+    //     return res.send({message:"user already exit", insertedId: null})
+    //   }
+    //   const result = await userCollection.insertOne(user);
+    //   res.send(result)
+    // })
+
+    // save user data in db 
     app.put('/user',async(req,res)=>{
       const user = req.body;
-      const query = {email:user?.email}
-
-      const isExist = await userCollection.findOne(query)
-
+      const query = {email: user?.email}
+      const isExist =await userCollection.findOne(query)
       if(isExist){
-        return res.send({message:"user already exit", insertedId: null})
+        return res.send(isExist)
       }
-      const result = await userCollection.insertOne(user);
-      res.send(result)
-    })
 
-    //get all users
+      const options = {upsert: true}
+      
+
+      const updateDoc = {
+        $set:
+        {
+          ...user,
+          timestamp:Date.now()
+        }
+      }
+
+      const result = await userCollection.updateOne(query,updateDoc,options)
+      res.send(result)
+      })
+
+    //get all users from db for admin
     app.get('/users',async(req,res)=>{
       // console.log(req.headers);
       const result = await userCollection.find().toArray()
       res.send(result)
     })
 
+    //get user info by email
+    app.get('/user/:email',async(req,res)=>{
+      const email = req.params.email
+      const result = await userCollection.findOne({email})
+      res.send(result)
+    })
+
+    //update user role
+    app.patch('/users/update/:email',async(req,res)=>{
+      const email = req.params.email
+      // console.log(email);
+      const user = req.body;
+      // console.log(user.role);
+      const query = {email}
+      const updateDoc={
+        $set:{
+          ...user,timestamp:Date.now(),
+        }
+        
+      }
+      const result = await userCollection.updateOne(query,updateDoc)
+      res.send(result)
+    })
 
 
 
