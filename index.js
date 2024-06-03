@@ -40,15 +40,32 @@ async function run() {
       
     //all collection 
     const userCollection = client.db('mediStoreDB').collection('users')
+    const medicineCollection = client.db('mediStoreDB').collection('medicines')
 
     //jwt related api
     app.post('/jwt',async(req,res)=>{
       const user = req.body;
-      console.log(user);
-      const token =jwt.sign(user,process.env.ACCESS_TOKEN,{expiresIn:'7d'})
+      // console.log(user);
+      const token =jwt.sign(user,process.env.ACCESS_TOKEN_SECRET,{expiresIn:'7d'})
       console.log(token);
       res.send({token});
     })
+
+    //middleware
+    const verifyToken = (req,res,next)=>{
+      // console.log("Inside Verify token",req.headers)
+      if(!req.headers.authorization){
+        return res.status(401).send({message: 'Forbidden access'})
+      }
+      const token = req.headers.authorization.split(' ')[1];
+      jwt.verify(token,process.env.ACCESS_TOKEN_SECRET,(err,decoded)=>{
+        if(err){
+          return res.status(401).send({message: 'forbidden access'})
+        }
+        req.decoded= decoded;
+        next();
+      })
+    }
 
 
 
@@ -68,7 +85,36 @@ async function run() {
 
     //get all users
     app.get('/users',async(req,res)=>{
+      // console.log(req.headers);
       const result = await userCollection.find().toArray()
+      res.send(result)
+    })
+
+
+
+
+
+
+
+
+
+
+
+    //save medicine in db
+    app.post('/medicine',async(req,res)=>{
+      const medicineData = req.body;
+      const result = await medicineCollection.insertOne(medicineData)
+      res.send(result)
+    })
+
+    //get medicine data for seller
+    app.get('/medicines/:email',async(req,res)=>{
+      const email = req.params.email;
+      
+      const query = {'seller.email':email}
+      
+      const result = await medicineCollection.find(query).toArray()
+     
       res.send(result)
     })
 
