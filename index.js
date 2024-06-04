@@ -42,6 +42,7 @@ async function run() {
     const userCollection = client.db('mediStoreDB').collection('users')
     const medicineCollection = client.db('mediStoreDB').collection('medicines')
     const advertisementCollection = client.db('mediStoreDB').collection('advertiments')
+    const categoryCollection = client.db('mediStoreDB').collection('categories')
 
     //jwt related api
     app.post('/jwt',async(req,res)=>{
@@ -204,12 +205,26 @@ async function run() {
       const updateDoc={
         $set:
           status,
-        
       }
       const result = await advertisementCollection.updateOne(query,updateDoc)
       res.send(result);
     })
 
+
+    //save category by admin
+    app.post('/category',async(req,res)=>{
+      const categoryData = req.body;
+      const result = await categoryCollection.insertOne(categoryData)
+      res.send(result)
+    })
+
+    //get categories added by admin
+    app.get('/categories',async(req,res)=>{
+      const result = await categoryCollection.find().toArray();
+      res.send(result)
+    })
+
+    
 
 
 
