@@ -223,8 +223,27 @@ async function run() {
       const result = await categoryCollection.find().toArray();
       res.send(result)
     })
-
     
+    //delete category
+    app.delete('/category/:id',async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await categoryCollection.deleteOne(query)
+      res.send(result)
+    })
+
+    //update category
+    app.put('/category/update/:id',async(req,res)=>{
+      const id = req.params.id;
+      const categoryData = req.body;
+      const query = {_id: new ObjectId(id)}
+      const updateDoc= {
+        $set:categoryData,
+        
+      }
+      const result = await categoryCollection.updateOne(query,updateDoc)
+      res.send(result)
+    })
 
 
 
