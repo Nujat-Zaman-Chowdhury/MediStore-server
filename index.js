@@ -1,6 +1,6 @@
 const express = require('express')
 const app = express()
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const jwt = require('jsonwebtoken');
 const cors = require('cors')
@@ -192,6 +192,21 @@ async function run() {
     //get all advertisement for admin
     app.get('/advertisements',async(req,res)=>{
       const result = await advertisementCollection.find().toArray();
+      res.send(result);
+    })
+
+    //change status
+
+    app.patch('/advertisement/slide/:id',async(req,res)=>{
+      const id = req.params.id;
+      const status = req.body
+      const query = {_id: new ObjectId(id)}
+      const updateDoc={
+        $set:
+          status,
+        
+      }
+      const result = await advertisementCollection.updateOne(query,updateDoc)
       res.send(result);
     })
 
