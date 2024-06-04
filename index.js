@@ -41,6 +41,7 @@ async function run() {
     //all collection 
     const userCollection = client.db('mediStoreDB').collection('users')
     const medicineCollection = client.db('mediStoreDB').collection('medicines')
+    const advertisementCollection = client.db('mediStoreDB').collection('advertiments')
 
     //jwt related api
     app.post('/jwt',async(req,res)=>{
@@ -155,7 +156,7 @@ async function run() {
     })
 
     //get medicine data for seller
-    app.get('/medicines/:email',async(req,res)=>{
+    app.get('/medicines/:email',verifyToken,async(req,res)=>{
       const email = req.params.email;
       
       const query = {'seller.email':email}
@@ -168,6 +169,31 @@ async function run() {
 
 
 
+
+    //advertisement related api
+
+    app.post('/advertisement',async(req,res)=>{
+      const advertisementData = req.body;
+      const result = await advertisementCollection.insertOne(advertisementData)
+      res.send(result)
+    })
+
+
+    //get advertisements details by seller email 
+    app.get('/advertisements/:email',async(req,res)=>{
+      const email = req.params.email;
+      // console.log(email);
+      const query = {'seller.email':email}
+      // console.log(query);
+      const result = await advertisementCollection.find(query).toArray()
+       res.send(result)
+    })
+
+    //get all advertisement for admin
+    app.get('/advertisements',async(req,res)=>{
+      const result = await advertisementCollection.find().toArray();
+      res.send(result);
+    })
 
 
 
