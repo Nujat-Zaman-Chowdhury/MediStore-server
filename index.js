@@ -225,8 +225,17 @@ async function run() {
 
     //get categories added by admin
     app.get('/categories',async(req,res)=>{
-      const result = await categoryCollection.find().toArray();
-      res.send(result)
+      // const result = await categoryCollection.find().toArray();
+      // res.send(result)
+      const categories = await categoryCollection.find().toArray();
+
+
+  const categoriesWithMedicineCount = await Promise.all(categories.map(async category => ({
+    ...category,
+    medicineCount: await medicineCollection.countDocuments({ category: category.category })
+  })));
+
+  res.send(categoriesWithMedicineCount);
     })
     
     //delete category
