@@ -166,6 +166,11 @@ async function run() {
      
       res.send(result)
     })
+    //get all medicines from db
+    app.get('/medicines',async(req,res)=>{
+      const result = await medicineCollection.find().toArray();
+      res.send(result);
+    })
 
 
 
@@ -236,6 +241,7 @@ async function run() {
     app.put('/category/update/:id',async(req,res)=>{
       const id = req.params.id;
       const categoryData = req.body;
+      // console.log(categoryData);
       const query = {_id: new ObjectId(id)}
       const updateDoc= {
         $set:categoryData,
@@ -244,6 +250,15 @@ async function run() {
       const result = await categoryCollection.updateOne(query,updateDoc)
       res.send(result)
     })
+
+
+    //get all category wised medicines
+    app.get('/category-details/:category',async(req,res)=>{
+      const category = req.params.category;
+      const result = await medicineCollection.find({category}).toArray();
+      res.send(result)
+    })
+
 
 
 
