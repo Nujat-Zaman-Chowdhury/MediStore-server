@@ -43,6 +43,7 @@ async function run() {
     const medicineCollection = client.db('mediStoreDB').collection('medicines')
     const advertisementCollection = client.db('mediStoreDB').collection('advertiments')
     const categoryCollection = client.db('mediStoreDB').collection('categories')
+    const cartCollection = client.db('mediStoreDB').collection('carts')
 
     //jwt related api
     app.post('/jwt',async(req,res)=>{
@@ -267,6 +268,22 @@ async function run() {
       const result = await medicineCollection.find({category}).toArray();
       res.send(result)
     })
+
+    //shop page related
+    //select button
+    app.post('/carts',async(req,res)=>{
+      const cartItem = req.body;
+      const result = await cartCollection.insertOne(cartItem);
+      res.send(result)
+    })
+
+    //get use cart item
+    app.get('/carts',async(req,res)=>{
+      const result = await cartCollection.find().toArray();
+      res.send(result)
+    })
+
+
 
 
 
