@@ -285,6 +285,39 @@ async function run() {
       res.send(result)
     })
 
+    //update quantity
+    app.put('/carts/:id',async(req,res)=>{
+      const id = req.params.id;
+      const {quantity} = req.body
+  
+
+     
+      const query = {
+        _id:new ObjectId(id)
+      }
+      const updateDoc ={
+        $set:{quantity}
+      }
+
+      const result = await cartCollection.updateOne(query,updateDoc)
+
+    })
+
+    //delete item from cart page
+
+    app.delete('/cart/:id',async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id: new ObjectId(id)}
+      const result = await cartCollection.deleteOne(query);
+      res.send(result)
+    })
+
+    app.delete('/carts',async(req,res)=>{
+      const email = req.query.email;
+      const query = {"buyer.email": email}
+      const result = await cartCollection.deleteMany(query)
+      res.send(result)
+    })
 
 
 
