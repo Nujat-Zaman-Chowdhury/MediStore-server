@@ -363,12 +363,25 @@ async function run() {
       res.send({paymentResult,deleteResult})
     })
 
-    //get all payments
+    //get all payments for admin
    app.get('/payments',async(req,res)=>{
    const result = await paymentCollection.find().toArray();
    res.send(result)
    })
 
+
+   //update payment status 
+   app.patch('/payment/:id',async(req,res)=>{
+    const id = req.params.id;
+    const {status}= req.body;
+    console.log(id,status);
+    const query = {_id: new ObjectId(id)}
+    const updateDoc ={
+      $set:{status}
+    }
+    const result = await paymentCollection.updateOne(query,updateDoc)
+    res.send(result)
+   })
 
 
 
