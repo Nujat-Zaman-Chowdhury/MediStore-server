@@ -399,6 +399,36 @@ async function run() {
     res.send(result)
    })
 
+   //get payment history for seller
+  //  app.get('/payment/seller/:email',async(req,res)=>{
+  //   const email = req.params.email;
+  //   const query = {'sellers.email' : email}
+  //   const result = await paymentCollection.find(query).toArray()
+  //   res.send(result)
+    
+  //  })
+
+  app.get('/payments/sellers', async (req, res) => {
+    
+    const result = await paymentCollection.aggregate([
+      {
+        $unwind: '$sellers'
+      },
+    ]).toArray()
+    res.send(result)
+  });
+
+  //get seller email data 
+  app.get('/payments/sellers/:email',async(req,res)=>{
+    const email = req.params.email;
+    const query = {'sellers.email': email}
+    const result = await paymentCollection.find(query).toArray()
+    res.send(result)
+  })
+
+
+
+
 
 
 
