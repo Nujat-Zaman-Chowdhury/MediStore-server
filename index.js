@@ -353,21 +353,21 @@ async function run() {
 
     // payment posst
     app.post('/payments',async(req,res)=>{
-      const payment = req.body;
+      const paymentInfo = req.body;
       // console.log(payment);
-      const paymentResult = await paymentCollection.insertOne(payment);
+      const paymentResult = await paymentCollection.insertOne(paymentInfo);
 
-      //carefully delete each item from the cart
+      
       const query = {
         _id: {
-          $in: payment.cartIds.map(id => new ObjectId(id))
+          $in: paymentInfo.cartIds.map(id => new ObjectId(id))
         }
       };
       const deleteResult = await cartCollection.deleteMany(query);
 
-      console.log("payment info", payment);
+      
       // console.log(query);
-      res.send({paymentResult,deleteResult})
+      res.send({paymentResult,deleteResult })
     })
 
     //get all payments for admin
@@ -377,7 +377,7 @@ async function run() {
    })
 
 
-   //update payment status 
+  //  update payment status 
    app.patch('/payment/:id',async(req,res)=>{
     const id = req.params.id;
     const {status}= req.body;
@@ -391,7 +391,7 @@ async function run() {
    })
 
 
-   //get payment history for user
+  //  //get payment history for user
    app.get('/payment/:email',async(req,res)=>{
     const email = req.params.email;
     const query = {'buyer.email': email}
@@ -399,33 +399,116 @@ async function run() {
     res.send(result)
    })
 
-   //get payment history for seller
-  //  app.get('/payment/seller/:email',async(req,res)=>{
-  //   const email = req.params.email;
-  //   const query = {'sellers.email' : email}
-  //   const result = await paymentCollection.find(query).toArray()
-  //   res.send(result)
-    
-  //  })
-
-  app.get('/payments/sellers', async (req, res) => {
-    
-    const result = await paymentCollection.aggregate([
-      {
-        $unwind: '$sellers'
-      },
-    ]).toArray()
+  //  get payment history for seller
+   app.get('/payments/sellers/:email',async(req,res)=>{
+    const email = req.params.email;
+    const query = {'items.seller.email' : email}
+    const result = await paymentCollection.find(query).toArray()
     res.send(result)
-  });
+    
+   })
+
+  //for invoice page 
+  app.get('/payment/invoice/:transactionId',async(req,res)=>{
+    const transactionId = req.params.transactionId
+    const query = {'transactionId':transactionId}
+    const result = await paymentCollection.findOne(query)
+    res.send(result)
+  })
+
+
+  // app.get('/payments/sellers', async (req, res) => {
+    
+  //   const result = await paymentCollection.aggregate([
+  //     {
+  //       $unwind: '$items'
+  //     },
+  //   ]).toArray()
+  //   res.send(result)
+  // });
 
   //get seller email data 
   app.get('/payments/sellers/:email',async(req,res)=>{
     const email = req.params.email;
-    const query = {'sellers.email': email}
+    const query = {'items.seller.email': email}
     const result = await paymentCollection.find(query).toArray()
     res.send(result)
   })
 
+
+  //sales report page
+  // app.get('/sales-reports',async(req,res)=>{
+    
+  //   const result = await paymentCollection.aggregate([
+  //   //   {
+  //   //     $match: {
+  //   //         date: { $gte: new Date(startDate), $lte: new Date(endDate) }
+  //   //     }
+  //   // },
+  //     {
+  //       $unwind: '$sellers'
+  //     },
+  //     {
+  //       $unwind:'$medicineItemIds'
+  //     },
+  //     {
+  //       $addFields: {
+  //           medicineItemId: { $toObjectId: '$medicineItemIds' }
+  //       }
+  //     },
+  //     {
+  //       $lookup:{
+  //         from:'medicines',
+  //         localField:'medicineItemId',
+  //         foreignField: '_id',
+  //         as: 'medicineItems'
+  //       }
+  //     },
+  //     {
+  //       $group: {
+  //           _id: '$_id',
+  //           email: { $first: '$email' },
+  //           price: { $first: '$price' },
+  //           transactionId: { $first: '$transactionId' },
+  //           date: { $first: '$date' },
+  //           status: { $first: '$status' },
+  //           buyer: { $first: '$buyer' },
+  //           sellers: { $first: '$sellers' },
+  //           medicineItems: { $push: '$medicineItems' }
+  //       }
+  //   },
+  //   {
+  //     $project: {
+  //         _id: 1,
+  //         email: 1,
+  //         price: 1,
+  //         transactionId: 1,
+  //         date: 1,
+  //         status: 1,
+  //         buyer: 1,
+  //         sellers: 1,
+  //         medicineItems: {
+  //             name: 1,
+  //             'generic-name': 1,
+  //             description: 1,
+  //             image: 1,
+  //             category: 1,
+  //             company: 1,
+  //             'mass-unit': 1,
+  //             pricePerUnit: 1,
+  //             discountPercentage: 1
+  //         }
+  //     }
+  // },
+  // // {
+  // //   $sort: { date: -1 } 
+  // // },
+  
+      
+
+  //   ]).toArray()
+  //   res.send(result)
+  // })
 
 
 
