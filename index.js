@@ -274,9 +274,16 @@ async function run() {
 
     //shop page related
     //select button
+    
     app.post('/carts',async(req,res)=>{
       const cartItem = req.body;
       const result = await cartCollection.insertOne(cartItem);
+      res.send(result)
+    })
+
+    //get all carts item
+    app.get('/carts',async(req,res)=>{
+      const result = await cartCollection.find().toArray();
       res.send(result)
     })
 
@@ -384,7 +391,13 @@ async function run() {
    })
 
 
-
+   //get payment history for user
+   app.get('/payment/:email',async(req,res)=>{
+    const email = req.params.email;
+    const query = {'buyer.email': email}
+    const result = await paymentCollection.find(query).toArray()
+    res.send(result)
+   })
 
 
 
