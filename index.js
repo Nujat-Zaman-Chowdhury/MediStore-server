@@ -162,6 +162,7 @@ async function run() {
       const page = parseFloat(req.query.page) - 1;
       const size = parseFloat(req.query.size);
       const search = req.query.search;
+      const sort = req.query.sort;
 
       let query = {};
       if (search) {
@@ -178,8 +179,11 @@ async function run() {
         };
       }
 
+      let options = {};
+      if (sort) options = { sort: { pricePerUnit: sort === "asc" ? 1 : -1 } };
+
       const result = await medicineCollection
-        .find(query)
+        .find(query, options)
         .skip(page * size)
         .limit(size)
         .toArray();
@@ -294,8 +298,62 @@ async function run() {
     //get all category wised medicines
     app.get("/category-details/:category", async (req, res) => {
       const category = req.params.category;
-      const result = await medicineCollection.find({ category }).toArray();
+      const page = parseFloat(req.query.page) - 1;
+      const size = parseFloat(req.query.size);
+      const search = req.query.search;
+      const sort = req.query.sort;
+
+      let query = { category: category };
+      if (search) {
+        query = {
+          $and: [
+            { category: category },
+            {
+              $or: [
+                { name: { $regex: search, $options: "i" } },
+                { category: { $regex: search, $options: "i" } },
+                { company: { $regex: search, $options: "i" } },
+                { pricePerUnit: { $regex: search, $options: "i" } },
+              ],
+            },
+          ],
+        };
+      }
+
+      let options = {};
+      if (sort) options = { sort: { pricePerUnit: sort === "asc" ? 1 : -1 } };
+      const result = await medicineCollection
+        .find(query,options)
+        
+        .skip(page * size)
+        .limit(size)
+        .toArray();
       res.send(result);
+    });
+
+    app.get("/categories-count/:category", async (req, res) => {
+      const search = req.query.search;
+      const category = req.params.category;
+      let query = { category: category };
+      if (search) {
+        query = {
+          $and: [
+            { category: category },
+            {
+              $or: [
+                { name: { $regex: search, $options: "i" } },
+                { category: { $regex: search, $options: "i" } },
+                { company: { $regex: search, $options: "i" } },
+                { pricePerUnit: { $regex: search, $options: "i" } },
+              ],
+            },
+          ],
+        };
+      }
+
+      const count = await medicineCollection.countDocuments(query);
+      // console.log(count);
+      res.send({ count });
     });
 
     //shop page related
