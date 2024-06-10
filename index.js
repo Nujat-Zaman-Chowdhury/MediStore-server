@@ -1,9 +1,9 @@
 const express = require("express");
 const app = express();
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
-require("dotenv").config();
-const jwt = require("jsonwebtoken");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
 const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 const port = process.env.PORT || 8000;
 
@@ -52,41 +52,48 @@ async function run() {
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "7d",
       });
-      // console.log(token);
+      console.log(token);
       res.send({ token });
     });
 
     //middleware
     const verifyToken = (req, res, next) => {
-      // console.log("Inside Verify token",req.headers)
+      console.log("Inside Verify token",req.headers.authorization)
       if (!req.headers.authorization) {
+        console.log("Authorization header missing");
         return res.status(401).send({ message: "Forbidden access" });
       }
-      const token = req.headers.authorization.split(" ")[1];
+      const token = req.headers.authorization.split(' ')[1];
+      console.log("Token received:", token);
       jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         if (err) {
+          console.log("JWT Verification Error:", err);
           return res.status(401).send({ message: "forbidden access" });
         }
         req.decoded = decoded;
+        console.log("login",decoded);
+
         next();
       });
     };
 
-    //users related api
-    // app.put('/user',async(req,res)=>{
-    //   const user = req.body;
-    //   const query = {email:user?.email}
+     // use verify admin after verifyToken
+     const verifyAdmin = async (req, res, next) => {
+      const email = req.decoded.email;
+      const query = { email: email };
+      const user = await userCollection.findOne(query);
+      const isAdmin = user?.role === 'admin';
+      if (!isAdmin) {
+        return res.status(403).send({ message: 'forbidden access' });
+      }
+      next();
+    }
 
-    //   const isExist = await userCollection.findOne(query)
 
-    //   if(isExist){
-    //     return res.send({message:"user already exit", insertedId: null})
-    //   }
-    //   const result = await userCollection.insertOne(user);
-    //   res.send(result)
-    // })
+    app.get('/protected-route', verifyToken, (req, res) => {
+      res.send(req.decoded); // Temporarily send req.decoded in the response
+    });
 
-    // save user data in db
     app.put("/user", async (req, res) => {
       const user = req.body;
       const query = { email: user?.email };
@@ -110,7 +117,7 @@ async function run() {
 
     //get all users from db for admin
     app.get("/users", async (req, res) => {
-      // console.log(req.headers);
+      console.log(req.headers);
       const result = await userCollection.find().toArray();
       res.send(result);
     });
@@ -507,77 +514,92 @@ async function run() {
       res.send(result);
     });
 
-    //sales report page
-    // app.get('/sales-reports',async(req,res)=>{
 
-    //   const result = await paymentCollection.aggregate([
-    //   //   {
-    //   //     $match: {
-    //   //         date: { $gte: new Date(startDate), $lte: new Date(endDate) }
-    //   //     }
-    //   // },
-    //     {
-    //       $unwind: '$sellers'
-    //     },
-    //     {
-    //       $unwind:'$medicineItemIds'
-    //     },
-    //     {
-    //       $addFields: {
-    //           medicineItemId: { $toObjectId: '$medicineItemIds' }
-    //       }
-    //     },
-    //     {
-    //       $lookup:{
-    //         from:'medicines',
-    //         localField:'medicineItemId',
-    //         foreignField: '_id',
-    //         as: 'medicineItems'
-    //       }
-    //     },
-    //     {
-    //       $group: {
-    //           _id: '$_id',
-    //           email: { $first: '$email' },
-    //           price: { $first: '$price' },
-    //           transactionId: { $first: '$transactionId' },
-    //           date: { $first: '$date' },
-    //           status: { $first: '$status' },
-    //           buyer: { $first: '$buyer' },
-    //           sellers: { $first: '$sellers' },
-    //           medicineItems: { $push: '$medicineItems' }
-    //       }
-    //   },
-    //   {
-    //     $project: {
-    //         _id: 1,
-    //         email: 1,
-    //         price: 1,
-    //         transactionId: 1,
-    //         date: 1,
-    //         status: 1,
-    //         buyer: 1,
-    //         sellers: 1,
-    //         medicineItems: {
-    //             name: 1,
-    //             'generic-name': 1,
-    //             description: 1,
-    //             image: 1,
-    //             category: 1,
-    //             company: 1,
-    //             'mass-unit': 1,
-    //             pricePerUnit: 1,
-    //             discountPercentage: 1
+    //revenue 
+    //admin
+    app.get('/admin-revenue',async(req,res)=>{
+      const salesDetails = await paymentCollection
+      .find(
+
+        {},
+        
+      ).toArray();
+      let totalPaid = 0;
+      let totalPending = 0;
+      countPaid=0;
+      countPending =0;
+
+      for(sale of salesDetails){
+        if(sale.status === 'paid'){
+          totalPaid += sale.price;
+          countPaid++;
+        }else if(sale.status === 'pending'){
+          totalPending += sale.price;
+          countPending++;
+        }
+      }
+
+      res.send({totalPaid,totalPending,countPaid,countPending})
+
+    })
+    
+    //seller
+    // app.get('/seller-revenue',async(req,res)=>{
+    //   const email = req.decoded.user
+    //   console.log(email);
+    //   const salesDetails = await paymentCollection
+    //   .find(
+
+    //     {"items.seller.email":email},
+        
+    //   ).toArray();
+    //   let totalPaid = 0;
+    //   let totalPending = 0;
+    //   countPaid=0;
+    //   countPending =0;
+
+    //   for (const sale of salesDetails) {
+    //     for (const item of sale.items) {
+    //         if (item.seller.email === email) {
+    //             if (sale.status === 'paid') {
+    //                 totalPaid += item.pricePerUnit * item.quantity * (1 - item.discountPercentage / 100);
+    //                 countPaid++;
+    //             } else if (sale.status === 'pending') {
+    //                 totalPending += item.pricePerUnit * item.quantity * (1 - item.discountPercentage / 100);
+    //                 countPending++;
+    //             }
     //         }
     //     }
-    // },
-    // // {
-    // //   $sort: { date: -1 }
-    // // },
+    // }
 
-    //   ]).toArray()
-    //   res.send(result)
+    
+
+    //   res.send({totalPaid,totalPending,countPaid,countPending})
+
     // })
+
+    app.get('/seller-revenue/:email', async (req, res) => {
+      const email = req.params.email;
+      const result = await paymentCollection.aggregate([
+          { $unwind: '$items' },
+          { $match: { 'items.seller.email': email } },
+          { $group: {
+              _id: '$status',
+              totalAmount: { $sum: '$items.pricePerUnit' },
+              count: { $sum: 1 }
+          } }
+      ]).toArray();
+  
+      const revenue = {
+          paidTotal: result.find(r => r._id === 'paid')?.totalAmount || 0,
+          pendingTotal: result.find(r => r._id === 'pending')?.totalAmount || 0,
+          paidCount: result.find(r => r._id === 'paid')?.count || 0,
+          pendingCount: result.find(r => r._id === 'pending')?.count || 0
+      };
+  
+      res.send(revenue);
+  });
+
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
