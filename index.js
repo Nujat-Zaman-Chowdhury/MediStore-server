@@ -52,22 +52,22 @@ async function run() {
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
         expiresIn: "7d",
       });
-      console.log(token);
-      res.send({ token });
+      // console.log(token);
+      res.send({token});
     });
 
     //middleware
-    const verifyToken = (req, res, next) => {
-      console.log("Inside Verify token",req.headers.authorization)
+    const verifyToken = (req,res,next) => {
+      // console.log("Inside Verify token",req.headers.authorization)
       if (!req.headers.authorization) {
-        console.log("Authorization header missing");
+        // console.log("Authorization header missing");
         return res.status(401).send({ message: "Forbidden access" });
       }
       const token = req.headers.authorization.split(' ')[1];
-      console.log("Token received:", token);
+      // console.log("Token received:", token);
       jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
         if (err) {
-          console.log("JWT Verification Error:", err);
+          // console.log("JWT Verification Error:", err);
           return res.status(401).send({ message: "forbidden access" });
         }
         req.decoded = decoded;
@@ -77,22 +77,47 @@ async function run() {
       });
     };
 
-     // use verify admin after verifyToken
-     const verifyAdmin = async (req, res, next) => {
-      const email = req.decoded.email;
-      const query = { email: email };
-      const user = await userCollection.findOne(query);
-      const isAdmin = user?.role === 'admin';
-      if (!isAdmin) {
-        return res.status(403).send({ message: 'forbidden access' });
+
+
+    //  use verify admin after verifyToken
+    //  const verifyAdmin = async (req, res, next) => {
+    //   const email = req.decoded.email;
+    //   const query = { email: email };
+    //   const user = await userCollection.findOne(query);
+    //   const isAdmin = user?.role === 'admin';
+    //   if (!isAdmin) {
+    //     return res.status(403).send({ message: 'forbidden access' });
+    //   }
+    //   next();
+    // }
+
+    const verifyAdmin = async (req, res, next) => {
+      console.log('hello')
+      const email = req.decoded.email
+      const query = { email: email }
+      const result = await userCollection.findOne(query)
+      console.log(result?.role)
+      if (!result || result?.role !== 'Admin')
+        return res.status(401).send({ message: 'unauthorized access!!' })
+
+      next()
+    }
+     // verify seller middleware
+     const verifySeller = async (req, res, next) => {
+      console.log('hello')
+      const email = req.decoded.email
+      const query = { email: email }
+      const result = await userCollection.findOne(query)
+      console.log(result?.role)
+      if (!result || result?.role !== 'Seller') {
+        return res.status(401).send({ message: 'unauthorized access!!' })
       }
+
       next();
     }
 
 
-    app.get('/protected-route', verifyToken, (req, res) => {
-      res.send(req.decoded); // Temporarily send req.decoded in the response
-    });
+
 
     app.put("/user", async (req, res) => {
       const user = req.body;
@@ -116,8 +141,8 @@ async function run() {
     });
 
     //get all users from db for admin
-    app.get("/users", async (req, res) => {
-      console.log(req.headers);
+    app.get("/users",verifyToken,verifyAdmin, async (req, res) => {
+      console.log("Inside user",req.headers.authorization);
       const result = await userCollection.find().toArray();
       res.send(result);
     });
@@ -130,7 +155,7 @@ async function run() {
     });
 
     //update user role
-    app.patch("/users/update/:email", async (req, res) => {
+    app.patch("/users/update/:email",verifyAdmin, async (req, res) => {
       const email = req.params.email;
       // console.log(email);
       const user = req.body;
@@ -245,7 +270,7 @@ async function run() {
 
     //change status
 
-    app.patch("/advertisement/slide/:id", async (req, res) => {
+    app.patch("/advertisement/slide/:id",verifyToken,verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const status = req.body;
       const query = { _id: new ObjectId(id) };
@@ -257,7 +282,7 @@ async function run() {
     });
 
     //save category by admin
-    app.post("/category", async (req, res) => {
+    app.post("/category",verifyToken,verifyAdmin, async (req, res) => {
       const categoryData = req.body;
       const result = await categoryCollection.insertOne(categoryData);
       res.send(result);
@@ -282,7 +307,7 @@ async function run() {
     });
 
     //delete category
-    app.delete("/category/:id", async (req, res) => {
+    app.delete("/category/:id",verifyToken,verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await categoryCollection.deleteOne(query);
@@ -290,7 +315,7 @@ async function run() {
     });
 
     //update category
-    app.put("/category/update/:id", async (req, res) => {
+    app.put("/category/update/:id",verifyToken,verifyAdmin, async (req, res) => {
       const id = req.params.id;
       const categoryData = req.body;
       // console.log(categoryData);
@@ -455,6 +480,7 @@ async function run() {
 
     //get all payments for admin
     app.get("/payments", async (req, res) => {
+      
       const result = await paymentCollection.find().toArray();
       res.send(result);
     });
@@ -473,7 +499,7 @@ async function run() {
     });
 
     //  //get payment history for user
-    app.get("/payment/:email", async (req, res) => {
+    app.get("/payment/:email",verifyToken, async (req, res) => {
       const email = req.params.email;
       const query = { "buyer.email": email };
       const result = await paymentCollection.find(query).toArray();
@@ -481,7 +507,7 @@ async function run() {
     });
 
     //  get payment history for seller
-    app.get("/payments/sellers/:email", async (req, res) => {
+    app.get("/payments/sellers/:email",verifyToken,verifySeller, async (req, res) => {
       const email = req.params.email;
       const query = { "items.seller.email": email };
       const result = await paymentCollection.find(query).toArray();
@@ -507,7 +533,7 @@ async function run() {
     // });
 
     //get seller email data
-    app.get("/payments/sellers/:email", async (req, res) => {
+    app.get("/payments/sellers/:email",verifyToken,verifySeller, async (req, res) => {
       const email = req.params.email;
       const query = { "items.seller.email": email };
       const result = await paymentCollection.find(query).toArray();
@@ -517,7 +543,7 @@ async function run() {
 
     //revenue 
     //admin
-    app.get('/admin-revenue',async(req,res)=>{
+    app.get('/admin-revenue',verifyToken,verifyAdmin,async(req,res)=>{
       const salesDetails = await paymentCollection
       .find(
 
@@ -544,41 +570,9 @@ async function run() {
     })
     
     //seller
-    // app.get('/seller-revenue',async(req,res)=>{
-    //   const email = req.decoded.user
-    //   console.log(email);
-    //   const salesDetails = await paymentCollection
-    //   .find(
 
-    //     {"items.seller.email":email},
-        
-    //   ).toArray();
-    //   let totalPaid = 0;
-    //   let totalPending = 0;
-    //   countPaid=0;
-    //   countPending =0;
 
-    //   for (const sale of salesDetails) {
-    //     for (const item of sale.items) {
-    //         if (item.seller.email === email) {
-    //             if (sale.status === 'paid') {
-    //                 totalPaid += item.pricePerUnit * item.quantity * (1 - item.discountPercentage / 100);
-    //                 countPaid++;
-    //             } else if (sale.status === 'pending') {
-    //                 totalPending += item.pricePerUnit * item.quantity * (1 - item.discountPercentage / 100);
-    //                 countPending++;
-    //             }
-    //         }
-    //     }
-    // }
-
-    
-
-    //   res.send({totalPaid,totalPending,countPaid,countPending})
-
-    // })
-
-    app.get('/seller-revenue/:email', async (req, res) => {
+    app.get('/seller-revenue/:email',verifyToken,verifySeller, async (req, res) => {
       const email = req.params.email;
       const result = await paymentCollection.aggregate([
           { $unwind: '$items' },
