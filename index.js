@@ -9,7 +9,12 @@ const port = process.env.PORT || 8000;
 
 // middleware
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost:5174"],
+  origin: [
+    "http://localhost:5173",
+     "http://localhost:5174",
+      "https://medistore-91753.web.app",
+      "https://medistore-91753.firebaseapp.com"
+    ],
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -93,7 +98,7 @@ async function run() {
 
     const verifyAdmin = async (req, res, next) => {
       console.log('hello')
-      const email = req.decoded.email
+      const email = req.decoded?.email
       const query = { email: email }
       const result = await userCollection.findOne(query)
       console.log(result?.role)
@@ -155,7 +160,7 @@ async function run() {
     });
 
     //update user role
-    app.patch("/users/update/:email",verifyAdmin, async (req, res) => {
+    app.patch("/users/update/:email",verifyToken,verifyAdmin, async (req, res) => {
       const email = req.params.email;
       // console.log(email);
       const user = req.body;
@@ -479,11 +484,46 @@ async function run() {
     });
 
     //get all payments for admin
-    app.get("/payments", async (req, res) => {
-      
-      const result = await paymentCollection.find().toArray();
-      res.send(result);
-    });
+app.get("/payments", async (req, res) => {
+  const { startDate, endDate } = req.query;
+  console.log("Received dates:", startDate, endDate);
+
+  let query = {};
+
+  if (startDate && endDate) {
+    const start = new Date(startDate);
+    const end = new Date(endDate);
+
+    if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+      return res.status(400).send("Invalid date format.");
+    }
+
+    // Set end date to the end of the day
+    end.setHours(23, 59, 59, 999);
+
+    query = {
+      date: { $gte: start, $lte: end }
+    };
+  }
+
+  console.log("Query:", query);
+
+  try {
+    const result = await paymentCollection.find(query).toArray();
+    if (result.length === 0) {
+      console.log("No payments found.");
+    } else {
+      console.log("Payments found:", result);
+    }
+    res.send(result);
+  } catch (error) {
+    console.error("Error fetching payments:", error);
+    res.status(500).send({ message: "Error fetching payments" });
+  }
+});
+
+    
+    
 
     //  update payment status
     app.patch("/payment/:id", async (req, res) => {
@@ -596,10 +636,8 @@ async function run() {
 
 
     // Send a ping to confirm a successful connection
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    
+
   } finally {
     // Ensures that the client will close when you finish/error
   }
